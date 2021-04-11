@@ -1,21 +1,22 @@
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import statistics
+import scipy.stats as stats
 import numpy as np
+import resources.df_helper as df_helper
 
 
 def create_heat_array(df, teams):
     df = df.copy()
-    home,visit,home_score,visit_score=df.columns
+    home,visit,home_score,visit_score,total=df.columns
 #     n_teams = df[home].nunique()
     n_teams = len(teams)
     square_array = np.zeros((n_teams,n_teams))
     # FOR REPETITIVE DATA, CALCULATE MEAN
-    # New column with total score per game
-    df['total_score'] = df[df.columns[2]] + df[df.columns[3]]
     # print(df.head().to_string())
     # Calculate total score mean for identical games
-    df['mean'] = df.groupby([df.columns[0],df.columns[1]]).total_score.transform('mean')
+    df['mean'] = df.groupby([df.columns[0],df.columns[1]]).TotalScore.transform('mean')
     # print(df.head().to_string())
     # Drop identical games
     df.drop_duplicates(subset=[df.columns[0], df.columns[1]], inplace=True)
@@ -72,13 +73,19 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-
-
-def heatmap(df, teams, ax=None,f_size=5,
-            cbar_kw={}, cbarlabel="", **kwargs):
+def heatmap(df, ax=None,f_size=5, cbar_kw={}, cbarlabel="", img_save=False, **kwargs):
+    
     plt.figure(figsize=(f_size,f_size), dpi=150)
+
     if not ax:
         ax = plt.gca()
+
+    # List of teams
+    teams = df_helper.unique_teams(df)
+    # Columns casting
+    # df[df.columns[2]] = df[df.columns[2]].astype(np.int64)
+    # df[df.columns[3]] = df[df.columns[3]].astype(np.int64)
+    # df[df.columns[4]] = df[df.columns[4]].astype(np.int64)
         
     # Converting data
     data = create_heat_array(df, teams)
@@ -106,13 +113,46 @@ def heatmap(df, teams, ax=None,f_size=5,
     # Turn spines off and create white grid.
     ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
     ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
-    ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+    ax.grid(which="minor", color="w", linestyle='-', linewidth=1)
     ax.tick_params(which="minor", bottom=False, left=False)
     
     # Annotations for each 'pixel'
 #     texts = annotate_heatmap(im, valfmt="{x:.1f}")
     
 #     plt.figure(figsize=(5,5))
-    plt.savefig('output.png')
+    if img_save:
+        plt.savefig('output.png')
     
     return im, cbar
+
+
+
+def normal_distribution(df, team, percentile=10):
+    df_ = df_helper.query_team(df, team)
+    
+    x = df_['TotalScore']
+    
+    p_low = np.percentile(x, percentile)
+    p_med = np.percentile(x, 50)
+    p_high = np.percentile(x, 100 - percentile)
+    
+    mean = statistics.mean(x)
+    sd = statistics.stdev(x)
+    
+    plt.plot(x, stats.norm.pdf(x, mean, sd))
+    plt.title('{} normal deviation'.format(team))
+    
+    xposition = [p_low, p_med, p_high]
+    for xc in xposition:
+        plt.axvline(x=xc, color='r', linestyle='-')
+    plt.show()
+
+
+
+def frecuency_histogram(df):
+    sturges = int(1 + np.log2(len(df)))
+    plt.hist(df["TotalScore"], bins=sturges)
+    plt.xlabel("Score per match")
+    plt.ylabel("Frecuency")
+    plt.title("Total score distribution")
+    plt.show()

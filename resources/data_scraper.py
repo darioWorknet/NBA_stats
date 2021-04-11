@@ -2,18 +2,13 @@ from selenium import webdriver
 import pandas as pd
 import time
 import numpy as np
-
+import resources.df_helper as df_helper
 
 
 PATH = "C:\Program Files (x86)\chromedriver.exe"
 
+NON_DESIRED_TEAMS = ['Team Durant','Team LeBron']
 
-# This function allows to append a new row to the dataframe easily
-def append_row(df, col1, col2, col3, col4):
-    # Insert new row at the bottom
-    df.loc[-1] = [col1, col2, np.int64(int(col3)), np.int64(int(col4))]
-    # Reset indexes
-    df.reset_index(drop=True, inplace=True)
 
 
 # Scroll down webpage, to make clikable some items at the bottom of webpage
@@ -38,11 +33,13 @@ def show_more_press(driver):
     time.sleep(1)
 
 
-def scrape():
+def scrape(url=None):
     driver = webdriver.Chrome(PATH)
     driver.maximize_window() # To avoid selecting items errors
 
-    url = r'https://www.flashscore.es/baloncesto/usa/nba/resultados/'
+    if url is None: # Use default URL
+        url = r'https://www.flashscore.es/baloncesto/usa/nba/resultados/'
+
     driver.get(url)
     time.sleep(1)
 
@@ -50,23 +47,28 @@ def scrape():
     accept.click()
     time.sleep(0.5)
     keep_showing = True
-
+    # Press a button with shows more results
     while keep_showing:
         try:
             show_more_press(driver)
         except Exception:
             keep_showing = False
-
+    # Creating an empty dataframe
     cols = ['HomeTeam', 'AwayTeam', 'ScoreHome', 'ScoreAway']
     df = pd.DataFrame(columns=cols)
+    # Iterate through item in HTML code
     tables = driver.find_elements_by_class_name("event__match--twoLine")
-
     for i, table in enumerate(tables):
         home_team = table.find_element_by_class_name('event__participant--home')
         away_team = table.find_element_by_class_name('event__participant--away')
         home_score = table.find_element_by_class_name('event__score--home')
         away_score = table.find_element_by_class_name('event__score--away')
-        append_row(df, home_team.text, away_team.text, home_score.text, away_score.text)
+        # Filter before append
+        filter1 = home_team.text not in NON_DESIRED_TEAMS and away_team.text not in NON_DESIRED_TEAMS
+        if filter1:
+            df_helper.append_row(df, home_team.text, away_team.text, home_score.text, away_score.text)
+        else:
+            print('Discarding following match {} vs {}'.format(home_team.text, away_team.text))
 
     driver.quit()
 
