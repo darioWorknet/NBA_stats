@@ -67,7 +67,7 @@ def get_single_factor(df, percentile):
         x = df_['TotalScore']
         # Position of percentile for x dataset
         p = np.percentile(x, percentile)
-        print("Team: {}, percentile: {}, pos: {}". format(team, percentile, p))
+        # print("Team: {}, percentile: {}, pos: {}". format(team, percentile, p))
         # Filter df, only getting result out of percentile range
         percentile_df = filter_by_percentile(df_, percentile, p)
         # Create a frecuency dictionary from dataframe

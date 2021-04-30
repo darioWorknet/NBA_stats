@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 import time
 import numpy as np
@@ -7,6 +8,7 @@ import resources.df_helper as df_helper
 
 PATH = "C:\Program Files (x86)\chromedriver.exe"
 
+# For filtering data
 NON_DESIRED_TEAMS = ['Team Durant','Team LeBron']
 
 
@@ -32,6 +34,14 @@ def show_more_press(driver):
     l.click()
     time.sleep(1)
 
+# Check if match went into extra time, in order to discard it
+def is_overtime(table):
+    try:
+        _ = table.find_element_by_class_name('event__part--5').text
+        return True
+    except NoSuchElementException:
+        return False
+
 
 def scrape(url=None):
     driver = webdriver.Chrome(PATH)
@@ -47,7 +57,7 @@ def scrape(url=None):
     accept.click()
     time.sleep(0.5)
     keep_showing = True
-    # Press a button with shows more results
+    # Press a button which shows more results
     while keep_showing:
         try:
             show_more_press(driver)
@@ -63,9 +73,14 @@ def scrape(url=None):
         away_team = table.find_element_by_class_name('event__participant--away')
         home_score = table.find_element_by_class_name('event__score--home')
         away_score = table.find_element_by_class_name('event__score--away')
+        # If match went into extra time, will be discarded
+        overtime = is_overtime(table)
+
         # Filter before append
         filter1 = home_team.text not in NON_DESIRED_TEAMS and away_team.text not in NON_DESIRED_TEAMS
-        if filter1:
+        filter2 = not overtime
+
+        if filter1 and filter2:
             df_helper.append_row(df, home_team.text, away_team.text, home_score.text, away_score.text)
         else:
             print('Discarding following match {} vs {}'.format(home_team.text, away_team.text))
