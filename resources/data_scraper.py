@@ -81,7 +81,7 @@ def scrape(url=None):
         filter2 = not overtime
 
         if filter1 and filter2:
-            df_helper.append_row(df, home_team.text, away_team.text, home_score.text, away_score.text)
+            df_helper.append_data(df, home_team.text, away_team.text, home_score.text, away_score.text)
         else:
             print('Discarding following match {} vs {}'.format(home_team.text, away_team.text))
 

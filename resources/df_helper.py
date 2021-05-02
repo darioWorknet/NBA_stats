@@ -14,9 +14,16 @@ def unique_teams(df):
 
 
 # This function allows to append a new row to the dataframe easily
-def append_row(df, col1, col2, col3, col4):
+def append_data(df, col1, col2, col3, col4):
     # Insert new row at the bottom
     df.loc[-1] = [col1, col2, np.int64(int(col3)), np.int64(int(col4))]
+    # Reset indexes
+    df.reset_index(drop=True, inplace=True)
+
+
+def append_row(df, new_row):
+    # Insert new row at the bottom
+    df.loc[-1] = new_row
     # Reset indexes
     df.reset_index(drop=True, inplace=True)
 
